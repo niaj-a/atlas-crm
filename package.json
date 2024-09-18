@@ -1,0 +1,31 @@
+{
+  "name": "production-crm",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm:dev -w apps/auth-service\" \"npm:dev -w apps/crm-service\" \"npm:dev -w apps/api-gateway\" \"npm:dev -w apps/web\"",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run lint && npm test && npm run build && npm run format:check"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.12.0",
+    "concurrently": "^9.0.1",
+    "eslint": "^9.12.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "globals": "^15.12.0",
+    "prettier": "^3.3.3",
+    "typescript-eslint": "^8.12.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
