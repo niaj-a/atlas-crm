@@ -22,3 +22,27 @@ export default [
       ...js.configs.recommended.rules,
       'no-unused-vars': unusedVariables,
     },
+  },
+  ...tseslint.configs.recommended.map((config) => ({
+    ...config,
+    files: ['**/*.{ts,tsx}'],
+  })),
+  {
+    files: ['apps/web/**/*.{ts,tsx}'],
+    plugins: {
+      'jsx-a11y': jsxA11y,
+      'react-hooks': reactHooks,
+    },
+    languageOptions: {
+      globals: globals.browser,
+      parserOptions: {
+        ecmaFeatures: { jsx: true },
+      },
+    },
+    rules: {
+      ...jsxA11y.flatConfigs.recommended.rules,
+      ...reactHooks.configs.recommended.rules,
+      '@typescript-eslint/no-unused-vars': unusedVariables,
+    },
+  },
+];
