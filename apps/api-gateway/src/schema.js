@@ -27,3 +27,33 @@ export const typeDefs = `#graphql
     addActivity(customerId: ID!, input: ActivityInput!): Customer!
   }
 `;
+
+export const resolvers = {
+  Query: {
+    me: (_root, _args, context) => context.user,
+    customers: (_root, { limit, offset }, context) => {
+      requireUser(context);
+      const search = new URLSearchParams();
+      if (limit !== undefined) search.set('limit', String(limit));
+      if (offset !== undefined) search.set('offset', String(offset));
+      const query = search.size ? `?${search}` : '';
+      return serviceRequest(config.crmServiceUrl, `/customers${query}`, { token: context.token });
+    },
+  },
+  Mutation: {
+    register: (_root, { input }) =>
+      serviceRequest(config.authServiceUrl, '/register', { method: 'POST', body: input }),
+    login: (_root, { input }) =>
+      serviceRequest(config.authServiceUrl, '/login', { method: 'POST', body: input }),
+    createCustomer: (_root, { input }, context) => {
+      requireUser(context);
+      return serviceRequest(config.crmServiceUrl, '/customers', {
+        method: 'POST',
+        token: context.token,
+        body: input,
+      });
+    },
+    updateCustomer: (_root, { id, input }, context) => {
+      requireUser(context);
+      return serviceRequest(config.crmServiceUrl, `/customers/${id}`, {
+        method: 'PUT',
