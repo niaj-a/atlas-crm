@@ -57,3 +57,32 @@ export const resolvers = {
       requireUser(context);
       return serviceRequest(config.crmServiceUrl, `/customers/${id}`, {
         method: 'PUT',
+        token: context.token,
+        body: input,
+      });
+    },
+    deleteCustomer: (_root, { id }, context) => {
+      requireUser(context);
+      return serviceRequest(config.crmServiceUrl, `/customers/${id}`, {
+        method: 'DELETE',
+        token: context.token,
+      });
+    },
+    addActivity: (_root, { customerId, input }, context) => {
+      requireUser(context);
+      return serviceRequest(config.crmServiceUrl, `/customers/${customerId}/activities`, {
+        method: 'POST',
+        token: context.token,
+        body: input,
+      });
+    },
+  },
+};
+
+export function requireUser(context) {
+  if (!context.user) {
+    throw new GraphQLError(context.authError ?? 'Authentication required', {
+      extensions: { code: 'UNAUTHENTICATED', http: { status: 401 } },
+    });
+  }
+}
