@@ -19,3 +19,24 @@ describe('GraphQL schema', () => {
     expect(error).toMatchObject({
       message: 'Authentication required',
       extensions: expect.objectContaining({ code: 'UNAUTHENTICATED' }),
+    });
+  });
+
+  it('distinguishes an invalid token and rejects non-HS256 JWTs', () => {
+    const token = jwt.sign({ sub: 'user-1' }, config.jwtSecret, { algorithm: 'HS384' });
+    const context = createAuthContext(`Bearer ${token}`);
+
+    expect(context.user).toBeNull();
+    expect(context.authError).toBe('Invalid or expired token');
+    let error;
+    try {
+      requireUser(context);
+    } catch (caught) {
+      error = caught;
+    }
+    expect(error).toMatchObject({
+      message: 'Invalid or expired token',
+      extensions: expect.objectContaining({ code: 'UNAUTHENTICATED' }),
+    });
+  });
+});
