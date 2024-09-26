@@ -24,3 +24,30 @@ export async function serviceRequest(baseUrl, path, { method = 'GET', token, bod
   } finally {
     clearTimeout(timeout);
   }
+
+  if (response.status === 204) return true;
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const statusMappings = {
+      400: 'BAD_USER_INPUT',
+      401: 'UNAUTHENTICATED',
+      403: 'FORBIDDEN',
+      404: 'NOT_FOUND',
+      409: 'CONFLICT',
+      429: 'TOO_MANY_REQUESTS',
+    };
+    const code = statusMappings[response.status] ?? 'UPSTREAM_SERVICE_ERROR';
+    const message =
+      response.status >= 500
+        ? 'Upstream service error'
+        : (payload.message ?? `Upstream service returned ${response.status}`);
+    throw upstreamError(message, code, response.status >= 500 ? 502 : response.status);
+  }
+  return payload;
+}
+
+function upstreamError(message, code, status) {
+  return new GraphQLError(message, {
+    extensions: { code, http: { status } },
+  });
+}
