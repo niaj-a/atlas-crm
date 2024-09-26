@@ -23,3 +23,28 @@ app.use(
       if (!origin || config.allowedOrigins.includes(origin)) return callback(null, true);
       return callback(new Error('Origin not allowed by CORS'));
     },
+  }),
+  express.json({ limit: '200kb' }),
+  expressMiddleware(server, {
+    context: async ({ req }) => createAuthContext(req.headers.authorization),
+  }),
+);
+
+const httpServer = app.listen(config.port, () => {
+  console.log(`api-gateway listening on :${config.port}/graphql`);
+});
+
+let shuttingDown = false;
+async function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`api-gateway received ${signal}; shutting down`);
+  httpServer.close(async () => {
+    await server.stop();
+    console.log('api-gateway shutdown complete');
+    process.exit(0);
+  });
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
