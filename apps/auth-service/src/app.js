@@ -30,3 +30,34 @@ export function createApp() {
         res.status(201).json(await registerUser(req.body));
       } catch (error) {
         next(error);
+      }
+    },
+  );
+
+  app.post(
+    '/login',
+    body('email').isString().isEmail().normalizeEmail(),
+    body('password').isString().notEmpty(),
+    async (req, res, next) => {
+      try {
+        assertValid(req);
+        res.json(await loginUser(req.body));
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  app.use((error, _req, res, _next) => {
+    const status = error.status ?? 500;
+    res.status(status).json({ message: status >= 500 ? 'Internal server error' : error.message });
+  });
+
+  return app;
+}
+
+function assertValid(req) {
+  const result = validationResult(req);
+  if (!result.isEmpty()) {
+    const error = new Error('Invalid request');
+    error.status = 400;
