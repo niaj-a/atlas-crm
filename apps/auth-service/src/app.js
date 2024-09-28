@@ -61,3 +61,35 @@ function assertValid(req) {
   if (!result.isEmpty()) {
     const error = new Error('Invalid request');
     error.status = 400;
+    error.details = result.array();
+    throw error;
+  }
+}
+
+function createRateLimiter({ max, windowMs }) {
+  const clients = new Map();
+
+  return (req, res, next) => {
+    const now = Date.now();
+    const key = `${req.ip}:${req.path}`;
+    let entry = clients.get(key);
+
+    if (!entry || entry.resetAt <= now) {
+      entry = { count: 0, resetAt: now + windowMs };
+      clients.set(key, entry);
+    }
+
+    entry.count += 1;
+    if (entry.count > max) {
+      res.set('Retry-After', String(Math.ceil((entry.resetAt - now) / 1000)));
+      return res.status(429).json({ message: 'Too many authentication attempts' });
+    }
+
+    if (clients.size > 1000) {
+      for (const [clientKey, value] of clients) {
+        if (value.resetAt <= now) clients.delete(clientKey);
+      }
+    }
+    next();
+  };
+}
