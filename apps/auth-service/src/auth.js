@@ -22,3 +22,27 @@ export async function registerUser({ name, email, password }) {
   const user = await User.create({ name, email, passwordHash });
   return issueSession(user);
 }
+
+export async function loginUser({ email, password }) {
+  const user = await User.findOne({ email: email.toLowerCase() });
+  if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+    const error = new Error('Invalid email or password');
+    error.status = 401;
+    throw error;
+  }
+  return issueSession(user);
+}
+
+function issueSession(user) {
+  const payload = {
+    sub: user.id,
+    role: user.role,
+    email: user.email,
+    name: user.name,
+  };
+  const token = jwt.sign(payload, config.jwtSecret, {
+    algorithm: 'HS256',
+    expiresIn: '8h',
+  });
+  return { token, user: publicUser(user) };
+}
