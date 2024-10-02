@@ -79,3 +79,44 @@ export function createApp() {
           { $set: pick(req.body, CUSTOMER_FIELDS) },
           { new: true, runValidators: true },
         ).lean();
+        if (!customer) return res.status(404).json({ message: 'Customer not found' });
+        res.json(normalizeCustomer(customer));
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  app.delete('/customers/:id', async (req, res, next) => {
+    try {
+      const result = await Customer.deleteOne({ _id: req.params.id, ownerId: req.user.sub });
+      if (!result.deletedCount) return res.status(404).json({ message: 'Customer not found' });
+      res.status(204).end();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post(
+    '/customers/:id/activities',
+    body('type').isString().isIn(ACTIVITY_TYPES),
+    body('text').isString().trim().isLength({ min: 1, max: 2000 }),
+    async (req, res, next) => {
+      try {
+        assertValid(req);
+        const customer = await Customer.findOne({ _id: req.params.id, ownerId: req.user.sub });
+        if (!customer) return res.status(404).json({ message: 'Customer not found' });
+        if ((customer.activities?.length ?? 0) >= MAX_CUSTOMER_ACTIVITIES) {
+          return res.status(400).json({
+            message: `A customer can have at most ${MAX_CUSTOMER_ACTIVITIES} activities`,
+          });
+        }
+        customer.activities.push({
+          ...pick(req.body, ACTIVITY_FIELDS),
+          createdBy: req.user.sub,
+        });
+        await customer.save();
+        res.status(201).json(normalizeCustomer(customer.toObject()));
+      } catch (error) {
+        next(error);
+      }
