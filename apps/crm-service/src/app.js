@@ -35,30 +35,6 @@ export function createApp() {
 
   app.post(
     '/customers',
-    body('name').isString().trim().isLength({ min: 1, max: 120 }),
-    body('email')
-      .optional({ nullable: true })
-      .isString()
-      .if((value) => value !== '')
-      .isEmail()
-      .normalizeEmail(),
-    body('company').optional({ nullable: true }).isString().trim().isLength({ max: 120 }),
-    body('phone').optional({ nullable: true }).isString().trim().isLength({ max: 40 }),
-    body('status').optional().isString().isIn(CUSTOMER_STATUSES),
-    async (req, res, next) => {
-      try {
-        assertValid(req);
-        const customer = await Customer.create({
-          ...pick(req.body, CUSTOMER_FIELDS),
-          ownerId: req.user.sub,
-        });
-        res.status(201).json(normalizeCustomer(customer.toObject()));
-      } catch (error) {
-        next(error);
-      }
-    },
-  );
-
   app.put(
     '/customers/:id',
     body('name').optional().isString().trim().isLength({ min: 1, max: 120 }),
