@@ -35,6 +35,30 @@ export function createApp() {
 
   app.post(
     '/customers',
+    body('name').isString().trim().isLength({ min: 1, max: 120 }),
+    body('email')
+      .optional({ nullable: true })
+      .isString()
+      .if((value) => value !== '')
+      .isEmail()
+      .normalizeEmail(),
+    body('company').optional({ nullable: true }).isString().trim().isLength({ max: 120 }),
+    body('phone').optional({ nullable: true }).isString().trim().isLength({ max: 40 }),
+    body('status').optional().isString().isIn(CUSTOMER_STATUSES),
+    async (req, res, next) => {
+      try {
+        assertValid(req);
+        const customer = await Customer.create({
+          ...pick(req.body, CUSTOMER_FIELDS),
+          ownerId: req.user.sub,
+        });
+        res.status(201).json(normalizeCustomer(customer.toObject()));
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
   app.put(
     '/customers/:id',
     body('name').optional().isString().trim().isLength({ min: 1, max: 120 }),
@@ -96,3 +120,43 @@ export function createApp() {
       } catch (error) {
         next(error);
       }
+    },
+  );
+
+  app.use((error, _req, res, _next) => {
+    const status = error.name === 'CastError' ? 400 : (error.status ?? 500);
+    res.status(status).json({ message: status >= 500 ? 'Internal server error' : error.message });
+  });
+  return app;
+}
+
+function assertValid(req) {
+  const result = validationResult(req);
+  if (!result.isEmpty()) {
+    const error = new Error('Invalid request');
+    error.status = 400;
+    throw error;
+  }
+}
+
+function pick(source, fields) {
+  return Object.fromEntries(
+    fields
+      .filter((field) => Object.prototype.hasOwnProperty.call(source, field))
+      .map((field) => [field, source[field]]),
+  );
+}
+
+function normalizeCustomer(customer) {
+  return {
+    ...customer,
+    id: String(customer._id),
+    createdAt: customer.createdAt?.toISOString?.() ?? customer.createdAt,
+    updatedAt: customer.updatedAt?.toISOString?.() ?? customer.updatedAt,
+    activities: (customer.activities ?? []).map((item) => ({
+      ...item,
+      id: String(item._id),
+      createdAt: item.createdAt?.toISOString?.() ?? item.createdAt,
+    })),
+  };
+}
