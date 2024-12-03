@@ -40,3 +40,46 @@ describe('AuthScreen', () => {
       {
         request: {
           query: LOGIN,
+          variables: { input: { email: 'ada@example.com', password: 'secret' } },
+        },
+        result: {
+          data: {
+            login: {
+              __typename: 'AuthPayload',
+              token: 'jwt-token',
+              user: authUser,
+            },
+          },
+        },
+      },
+      {
+        request: { query: CUSTOMERS },
+        result: { data: { customers: [] } },
+      },
+    ]);
+
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'ada@example.com' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'secret' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Customers')).toBeInTheDocument();
+    });
+    expect(screen.getByText('ada@example.com')).toBeInTheDocument();
+  });
+
+  it('shows an accessible error when login payload is missing', async () => {
+    renderApp([
+      {
+        request: {
+          query: LOGIN,
+          variables: { input: { email: 'ada@example.com', password: 'secret' } },
+        },
+        result: { data: { login: null } },
+      },
+    ]);
+
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'ada@example.com' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'secret' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+
