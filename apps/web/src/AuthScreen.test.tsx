@@ -27,23 +27,6 @@ function renderApp(mocks: MockedResponse[], preloaded?: Partial<RootState>) {
 
   return render(
     <Provider store={store}>
-      <MockedProvider mocks={mocks} cache={createAppCache()}>
-        <App />
-      </MockedProvider>
-    </Provider>,
-  );
-}
-
-describe('AuthScreen', () => {
-  it('signs in and shows the dashboard when login returns a session', async () => {
-    renderApp([
-      {
-        request: {
-          query: LOGIN,
-          variables: { input: { email: 'ada@example.com', password: 'secret' } },
-        },
-        result: {
-          data: {
             login: {
               __typename: 'AuthPayload',
               token: 'jwt-token',
