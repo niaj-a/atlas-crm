@@ -27,6 +27,23 @@ function renderApp(mocks: MockedResponse[], preloaded?: Partial<RootState>) {
 
   return render(
     <Provider store={store}>
+      <MockedProvider mocks={mocks} cache={createAppCache()}>
+        <App />
+      </MockedProvider>
+    </Provider>,
+  );
+}
+
+describe('AuthScreen', () => {
+  it('signs in and shows the dashboard when login returns a session', async () => {
+    renderApp([
+      {
+        request: {
+          query: LOGIN,
+          variables: { input: { email: 'ada@example.com', password: 'secret' } },
+        },
+        result: {
+          data: {
             login: {
               __typename: 'AuthPayload',
               token: 'jwt-token',
@@ -66,3 +83,45 @@ function renderApp(mocks: MockedResponse[], preloaded?: Partial<RootState>) {
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'secret' } });
     fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
 
+    expect(await screen.findByRole('alert')).toHaveTextContent('Sign in failed');
+    expect(screen.getByRole('heading', { name: 'Atlas CRM' })).toBeInTheDocument();
+  });
+
+  it('switches to register mode and creates an account', async () => {
+    renderApp([
+      {
+        request: {
+          query: REGISTER,
+          variables: {
+            input: { name: 'Ada', email: 'ada@example.com', password: 'secret' },
+          },
+        },
+        result: {
+          data: {
+            register: {
+              __typename: 'AuthPayload',
+              token: 'jwt-token',
+              user: authUser,
+            },
+          },
+        },
+      },
+      {
+        request: { query: CUSTOMERS },
+        result: { data: { customers: [] } },
+      },
+    ]);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Need an account?' }));
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Ada' } });
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'ada@example.com' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'secret' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('No customers yet. Add your first customer to get started.'),
+      ).toBeInTheDocument();
+    });
+  });
+});
