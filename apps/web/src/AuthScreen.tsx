@@ -26,23 +26,6 @@ export function AuthScreen() {
 
     try {
       if (mode === 'login') {
-        const result = await login({
-          variables: { input: { email: form.email, password: form.password } },
-        });
-        const payload = result.data?.login;
-        if (!payload?.token || !payload.user) {
-          setFormError('Sign in failed. Please try again.');
-          return;
-        }
-        dispatch(setSession(payload));
-        return;
-      }
-
-      const result = await register({ variables: { input: form } });
-      const payload = result.data?.register;
-      if (!payload?.token || !payload.user) {
-        setFormError('Registration failed. Please try again.');
-        return;
       }
       dispatch(setSession(payload));
     } catch {
