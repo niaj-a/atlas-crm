@@ -26,6 +26,23 @@ export function AuthScreen() {
 
     try {
       if (mode === 'login') {
+        const result = await login({
+          variables: { input: { email: form.email, password: form.password } },
+        });
+        const payload = result.data?.login;
+        if (!payload?.token || !payload.user) {
+          setFormError('Sign in failed. Please try again.');
+          return;
+        }
+        dispatch(setSession(payload));
+        return;
+      }
+
+      const result = await register({ variables: { input: form } });
+      const payload = result.data?.register;
+      if (!payload?.token || !payload.user) {
+        setFormError('Registration failed. Please try again.');
+        return;
       }
       dispatch(setSession(payload));
     } catch {
@@ -66,3 +83,45 @@ export function AuthScreen() {
           </div>
           <div className="field">
             <label htmlFor={passwordId}>Password</label>
+            <input
+              id={passwordId}
+              name="password"
+              type="password"
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              required
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+            />
+          </div>
+          <button type="submit" disabled={busy} aria-busy={busy}>
+            {busy
+              ? mode === 'login'
+                ? 'Signing in…'
+                : 'Creating account…'
+              : mode === 'login'
+                ? 'Sign in'
+                : 'Create account'}
+          </button>
+        </form>
+        <div className="status" role="status" aria-live="polite">
+          {busy && (
+            <p className="muted">{mode === 'login' ? 'Signing in…' : 'Creating account…'}</p>
+          )}
+        </div>
+        <div role="alert" aria-live="assertive">
+          {errorMessage && <p className="error">{errorMessage}</p>}
+        </div>
+        <button
+          type="button"
+          className="link"
+          onClick={() => {
+            setFormError(null);
+            setMode(mode === 'login' ? 'register' : 'login');
+          }}
+        >
+          {mode === 'login' ? 'Need an account?' : 'Already registered?'}
+        </button>
+      </section>
+    </main>
+  );
+}
