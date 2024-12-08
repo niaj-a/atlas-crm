@@ -37,3 +37,42 @@ function renderDashboard(mocks: MockedResponse[]) {
       </MockedProvider>
     </Provider>,
   );
+}
+
+describe('Dashboard', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('shows an empty state when there are no customers', async () => {
+    renderDashboard([
+      {
+        request: { query: CUSTOMERS },
+        result: { data: { customers: [] } },
+      },
+    ]);
+
+    expect(
+      await screen.findByText('No customers yet. Add your first customer to get started.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('ada@example.com')).toBeInTheDocument();
+  });
+
+  it('creates a customer and surfaces success feedback', async () => {
+    const created = {
+      __typename: 'Customer' as const,
+      id: 'c2',
+      name: 'Globex',
+      email: 'ops@globex.com',
+      company: 'Globex',
+      phone: '',
+      status: 'lead',
+      createdAt: '2024-02-01',
+    };
+
+    renderDashboard([
+      {
+        request: { query: CUSTOMERS },
+        result: { data: { customers: [] } },
+      },
+      {
