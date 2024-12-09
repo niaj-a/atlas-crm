@@ -34,6 +34,29 @@ function renderDashboard(mocks: MockedResponse[]) {
     <Provider store={store}>
       <MockedProvider mocks={mocks} cache={createAppCache()}>
         <Dashboard />
+      </MockedProvider>
+    </Provider>,
+  );
+}
+
+describe('Dashboard', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('shows an empty state when there are no customers', async () => {
+    renderDashboard([
+      {
+        request: { query: CUSTOMERS },
+        result: { data: { customers: [] } },
+      },
+    ]);
+
+    expect(
+      await screen.findByText('No customers yet. Add your first customer to get started.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('ada@example.com')).toBeInTheDocument();
+  });
 
   it('creates a customer and surfaces success feedback', async () => {
     const created = {
@@ -92,3 +115,42 @@ function renderDashboard(mocks: MockedResponse[]) {
       {
         request: { query: CUSTOMERS },
         result: { data: { customers: [existingCustomer] } },
+      },
+      {
+        request: {
+          query: DELETE_CUSTOMER,
+          variables: { id: 'c1' },
+        },
+        result: { data: { deleteCustomer: true } },
+      },
+    ]);
+
+    const row = await screen.findByText('Acme');
+    const article = row.closest('article');
+    expect(article).toBeTruthy();
+    fireEvent.click(within(article as HTMLElement).getByRole('button', { name: 'Delete' }));
+
+    expect(window.confirm).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(screen.getByText('Deleted Acme.')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Acme')).not.toBeInTheDocument();
+  });
+
+  it('does not delete when confirmation is cancelled', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    renderDashboard([
+      {
+        request: { query: CUSTOMERS },
+        result: { data: { customers: [existingCustomer] } },
+      },
+    ]);
+
+    const row = await screen.findByText('Acme');
+    const article = row.closest('article');
+    fireEvent.click(within(article as HTMLElement).getByRole('button', { name: 'Delete' }));
+
+    expect(screen.getByText('Acme')).toBeInTheDocument();
+  });
+});
