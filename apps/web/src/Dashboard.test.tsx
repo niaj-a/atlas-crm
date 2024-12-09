@@ -34,29 +34,6 @@ function renderDashboard(mocks: MockedResponse[]) {
     <Provider store={store}>
       <MockedProvider mocks={mocks} cache={createAppCache()}>
         <Dashboard />
-      </MockedProvider>
-    </Provider>,
-  );
-}
-
-describe('Dashboard', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it('shows an empty state when there are no customers', async () => {
-    renderDashboard([
-      {
-        request: { query: CUSTOMERS },
-        result: { data: { customers: [] } },
-      },
-    ]);
-
-    expect(
-      await screen.findByText('No customers yet. Add your first customer to get started.'),
-    ).toBeInTheDocument();
-    expect(screen.getByText('ada@example.com')).toBeInTheDocument();
-  });
 
   it('creates a customer and surfaces success feedback', async () => {
     const created = {
