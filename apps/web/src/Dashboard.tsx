@@ -128,3 +128,47 @@ export function Dashboard() {
             </div>
             <div className="field">
               <label htmlFor={emailId}>Email</label>
+              <input
+                id={emailId}
+                name="email"
+                type="email"
+                value={form.email ?? ''}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor={companyId}>Company</label>
+              <input
+                id={companyId}
+                name="company"
+                value={form.company ?? ''}
+                onChange={(e) => setForm({ ...form, company: e.target.value })}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor={phoneId}>Phone</label>
+              <input
+                id={phoneId}
+                name="phone"
+                value={form.phone ?? ''}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor={statusId}>Status</label>
+              <select
+                id={statusId}
+                name="status"
+                value={form.status ?? 'lead'}
+                onChange={(e) => setForm({ ...form, status: e.target.value })}
+              >
+                <option value="lead">Lead</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+            <button type="submit" disabled={createState.loading} aria-busy={createState.loading}>
+              {createState.loading ? 'Adding…' : 'Add customer'}
+            </button>
+          </form>
+        </section>
