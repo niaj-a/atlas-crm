@@ -85,3 +85,46 @@ export function Dashboard() {
     setActionMessage(null);
     try {
       const result = await deleteCustomer({
+        variables: { id: customer.id },
+        optimisticResponse: { deleteCustomer: true },
+        update(cache, { data: mutationData }) {
+          if (mutationData?.deleteCustomer) removeCustomer(cache, customer.id);
+        },
+      });
+      if (!result.data?.deleteCustomer) {
+        setActionError(`Could not delete ${customer.name}.`);
+        return;
+      }
+      setActionMessage(`Deleted ${customer.name}.`);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : `Could not delete ${customer.name}.`);
+    }
+  }
+
+  return (
+    <div className="shell">
+      <header>
+        <div>
+          <strong>Atlas CRM</strong>
+          <span>{user?.email}</span>
+        </div>
+        <button type="button" className="secondary" onClick={() => dispatch(logout())}>
+          Sign out
+        </button>
+      </header>
+      <main className="grid">
+        <section className="panel">
+          <h2>Add customer</h2>
+          <form onSubmit={submit}>
+            <div className="field">
+              <label htmlFor={nameId}>Name</label>
+              <input
+                id={nameId}
+                name="name"
+                required
+                value={form.name ?? ''}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor={emailId}>Email</label>
