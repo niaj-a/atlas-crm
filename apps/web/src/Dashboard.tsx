@@ -49,6 +49,40 @@ export function Dashboard() {
   const [actionError, setActionError] = useState<string | null>(null);
 
   const [createCustomer, createState] = useMutation<CreateCustomerResult>(CREATE_CUSTOMER, {
+    update(cache, { data: mutationData }) {
+      const created = mutationData?.createCustomer;
+      if (created) appendCustomer(cache, created);
+    },
+  });
+
+  const [deleteCustomer, deleteState] = useMutation<DeleteCustomerResult>(DELETE_CUSTOMER);
+
+  const customers = data?.customers ?? [];
+  const mutationBusy = createState.loading || deleteState.loading;
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    setActionError(null);
+    setActionMessage(null);
+    try {
+      const result = await createCustomer({ variables: { input: form } });
+      if (!result.data?.createCustomer) {
+        setActionError('Could not create customer. Please try again.');
+        return;
+      }
+      setForm(emptyForm);
+      setActionMessage(`Added ${result.data.createCustomer.name}.`);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Could not create customer.');
+    }
+  }
+
+  async function onDelete(customer: Customer) {
+    const confirmed = window.confirm(`Delete ${customer.name}? This cannot be undone.`);
+    if (!confirmed) return;
+
+    setActionError(null);
+    setActionMessage(null);
     try {
       const result = await deleteCustomer({
         variables: { id: customer.id },
@@ -138,3 +172,46 @@ export function Dashboard() {
             </button>
           </form>
         </section>
+
+        <section className="panel wide">
+          <h2>Customers</h2>
+          <div className="status" role="status" aria-live="polite">
+            {loading && <p>Loading…</p>}
+            {mutationBusy && !loading && <p className="muted">Updating customers…</p>}
+            {actionMessage && <p className="success">{actionMessage}</p>}
+          </div>
+          <div role="alert" aria-live="assertive">
+            {error && <p className="error">{error.message}</p>}
+            {actionError && <p className="error">{actionError}</p>}
+          </div>
+          {!loading && !error && customers.length === 0 && (
+            <p className="empty">No customers yet. Add your first customer to get started.</p>
+          )}
+          <div className="customers">
+            {customers.map((customer) => (
+              <article key={customer.id}>
+                <div>
+                  <strong>{customer.name}</strong>
+                  <span>
+                    {customer.company || 'No company'} · {customer.email || 'No email'}
+                  </span>
+                </div>
+                <div className="actions">
+                  <span className={`badge ${customer.status}`}>{customer.status}</span>
+                  <button
+                    type="button"
+                    className="danger"
+                    disabled={deleteState.loading}
+                    onClick={() => onDelete(customer)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
