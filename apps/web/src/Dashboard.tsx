@@ -49,40 +49,6 @@ export function Dashboard() {
   const [actionError, setActionError] = useState<string | null>(null);
 
   const [createCustomer, createState] = useMutation<CreateCustomerResult>(CREATE_CUSTOMER, {
-    update(cache, { data: mutationData }) {
-      const created = mutationData?.createCustomer;
-      if (created) appendCustomer(cache, created);
-    },
-  });
-
-  const [deleteCustomer, deleteState] = useMutation<DeleteCustomerResult>(DELETE_CUSTOMER);
-
-  const customers = data?.customers ?? [];
-  const mutationBusy = createState.loading || deleteState.loading;
-
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    setActionError(null);
-    setActionMessage(null);
-    try {
-      const result = await createCustomer({ variables: { input: form } });
-      if (!result.data?.createCustomer) {
-        setActionError('Could not create customer. Please try again.');
-        return;
-      }
-      setForm(emptyForm);
-      setActionMessage(`Added ${result.data.createCustomer.name}.`);
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Could not create customer.');
-    }
-  }
-
-  async function onDelete(customer: Customer) {
-    const confirmed = window.confirm(`Delete ${customer.name}? This cannot be undone.`);
-    if (!confirmed) return;
-
-    setActionError(null);
-    setActionMessage(null);
     try {
       const result = await deleteCustomer({
         variables: { id: customer.id },
