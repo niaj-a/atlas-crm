@@ -17,3 +17,22 @@ export class ErrorBoundary extends Component<Props, State> {
   private reset = () => {
     this.setState({ hasError: false, message: '' });
   };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <main className="center">
+          <section className="panel auth" role="alert">
+            <h1>Something went wrong</h1>
+            <p>Atlas CRM hit an unexpected error. You can try again.</p>
+            <p className="error">{this.state.message}</p>
+            <button type="button" onClick={this.reset}>
+              Try again
+            </button>
+          </section>
+        </main>
+      );
+    }
+    return this.props.children;
+  }
+}
