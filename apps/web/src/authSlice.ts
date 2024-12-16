@@ -26,3 +26,32 @@ export function loadPersistedSession(): AuthState {
     const session = parsed as Record<string, unknown>;
     if (typeof session.token === 'string' && isUser(session.user)) {
       return { token: session.token, user: session.user };
+    }
+  } catch {
+    // Corrupted storage should not break boot.
+  }
+  localStorage.removeItem(SESSION_KEY);
+  return { token: null, user: null };
+}
+
+const initialState: AuthState = loadPersistedSession();
+
+const slice = createSlice({
+  name: 'auth',
+  initialState,
+  reducers: {
+    setSession(state, action: PayloadAction<AuthPayload>) {
+      state.token = action.payload.token;
+      state.user = action.payload.user;
+      localStorage.setItem(SESSION_KEY, JSON.stringify(action.payload));
+    },
+    logout(state) {
+      state.token = null;
+      state.user = null;
+      localStorage.removeItem(SESSION_KEY);
+    },
+  },
+});
+
+export const { setSession, logout } = slice.actions;
+export default slice.reducer;
