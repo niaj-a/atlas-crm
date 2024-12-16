@@ -30,3 +30,34 @@ export const REGISTER = gql`
 
 export const CUSTOMERS = gql`
   query Customers {
+    customers {
+      id
+      name
+      email
+      company
+      phone
+      status
+      createdAt
+    }
+  }
+`;
+
+export const CREATE_CUSTOMER = gql`
+  mutation CreateCustomer($input: CustomerInput!) {
+    createCustomer(input: $input) {
+      id
+      name
+      email
+      company
+      phone
+      status
+      createdAt
+    }
+  }
+`;
+
+export const DELETE_CUSTOMER = gql`
+  mutation DeleteCustomer($id: ID!) {
+    deleteCustomer(id: $id)
+  }
+`;
