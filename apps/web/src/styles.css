@@ -47,40 +47,6 @@ select:focus-visible {
 
 .auth {
   width: min(420px, 92vw);
-}
-
-h1,
-h2 {
-  margin-top: 0;
-}
-
-form {
-  display: grid;
-  gap: 12px;
-}
-
-.field {
-  display: grid;
-  gap: 6px;
-}
-
-.field label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #344054;
-}
-
-input,
-select {
-  padding: 12px 14px;
-  border: 1px solid #ccd4e0;
-  border-radius: 10px;
-}
-
-button {
-  border: 0;
-  border-radius: 10px;
-  padding: 11px 16px;
   background: #1f5eff;
   color: white;
   font-weight: 700;
