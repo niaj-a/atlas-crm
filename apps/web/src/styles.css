@@ -85,3 +85,46 @@ button {
   color: white;
   font-weight: 700;
   cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.secondary,
+.link {
+  background: #edf2ff;
+  color: #244179;
+}
+
+.link {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.danger {
+  background: #fff0f0;
+  color: #b42318;
+}
+
+.error {
+  color: #b42318;
+}
+
+.success {
+  color: #067647;
+}
+
+.muted,
+.empty {
+  color: #667085;
+}
+
+.status:empty {
+  display: none;
+}
+
+.shell header {
+  display: flex;
+  justify-content: space-between;
