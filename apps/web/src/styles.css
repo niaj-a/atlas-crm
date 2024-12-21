@@ -47,6 +47,40 @@ select:focus-visible {
 
 .auth {
   width: min(420px, 92vw);
+}
+
+h1,
+h2 {
+  margin-top: 0;
+}
+
+form {
+  display: grid;
+  gap: 12px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #344054;
+}
+
+input,
+select {
+  padding: 12px 14px;
+  border: 1px solid #ccd4e0;
+  border-radius: 10px;
+}
+
+button {
+  border: 0;
+  border-radius: 10px;
+  padding: 11px 16px;
   background: #1f5eff;
   color: white;
   font-weight: 700;
@@ -138,3 +172,46 @@ button:disabled {
   display: grid;
 }
 
+.customers article span {
+  color: #667085;
+  font-size: 13px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.badge {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #eef2f6;
+}
+
+.badge.active {
+  background: #e8f7ee;
+}
+
+.badge.inactive {
+  background: #f0f0f0;
+}
+
+@media (max-width: 800px) {
+  .grid {
+    grid-template-columns: 1fr;
+    padding: 14px;
+  }
+
+  .shell header {
+    padding: 14px;
+  }
+
+  .customers article {
+    flex-direction: column;
+  }
+
+  .actions {
+    justify-content: space-between;
+  }
+}
