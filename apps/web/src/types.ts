@@ -24,3 +24,30 @@ export type Customer = {
   company?: string | null;
   phone?: string | null;
   status: CustomerStatus;
+  createdAt?: string | null;
+};
+
+export type LoginInput = {
+  email: string;
+  password: string;
+};
+
+export type RegisterInput = {
+  name: string;
+  email: string;
+  password: string;
+};
+
+export type CustomerInput = {
+  name: string;
+  email?: string;
+  company?: string;
+  phone?: string;
+  status?: string;
+};
+
+export type LoginResult = { login: AuthPayload };
+export type RegisterResult = { register: AuthPayload };
+export type CustomersResult = { customers: Customer[] };
+export type CreateCustomerResult = { createCustomer: Customer };
+export type DeleteCustomerResult = { deleteCustomer: boolean };
