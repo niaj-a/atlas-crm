@@ -26,3 +26,32 @@ describe('crm-service', () => {
   });
 
   it('allows only writable fields when creating a customer', async () => {
+    const create = vi.spyOn(Customer, 'create').mockImplementationOnce(async (values) => ({
+      toObject: () => ({ _id: 'customer-1', activities: [], ...values }),
+    }));
+
+    const response = await request(createApp())
+      .post('/customers')
+      .set('authorization', authorization)
+      .send({
+        name: 'Ada',
+        company: 'Analytical Engines',
+        ownerId: 'attacker',
+        activities: [{ text: 'injected' }],
+      });
+
+    expect(response.status).toBe(201);
+    expect(create).toHaveBeenCalledWith({
+      name: 'Ada',
+      company: 'Analytical Engines',
+      ownerId: 'owner-1',
+    });
+  });
+
+  it('prevents ownerId and activities injection during updates', async () => {
+    const lean = vi.fn().mockResolvedValue({
+      _id: 'customer-1',
+      name: 'Updated',
+      ownerId: 'owner-1',
+      activities: [],
+    });
