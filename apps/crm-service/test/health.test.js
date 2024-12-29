@@ -55,3 +55,31 @@ describe('crm-service', () => {
       ownerId: 'owner-1',
       activities: [],
     });
+    const update = vi.spyOn(Customer, 'findOneAndUpdate').mockReturnValue({ lean });
+
+    const response = await request(createApp())
+      .put('/customers/customer-1')
+      .set('authorization', authorization)
+      .send({
+        name: 'Updated',
+        ownerId: 'attacker',
+        activities: [{ text: 'injected' }],
+      });
+
+    expect(response.status).toBe(200);
+    expect(update).toHaveBeenCalledWith(
+      { _id: 'customer-1', ownerId: 'owner-1' },
+      { $set: { name: 'Updated' } },
+      { new: true, runValidators: true },
+    );
+  });
+
+  it('validates company and phone fields', async () => {
+    const response = await request(createApp())
+      .post('/customers')
+      .set('authorization', authorization)
+      .send({ name: 'Ada', company: 42, phone: 'x'.repeat(41) });
+
+    expect(response.status).toBe(400);
+  });
+});
