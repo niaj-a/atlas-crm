@@ -1,0 +1,25 @@
+name: Deploy AWS
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+
+jobs:
+  deploy:
+    if: ${{ vars.AWS_REGION != '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
