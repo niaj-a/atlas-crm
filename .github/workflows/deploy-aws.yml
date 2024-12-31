@@ -23,3 +23,28 @@ jobs:
     strategy:
       matrix:
         service:
+          - name: auth-service
+            dockerfile: apps/auth-service/Dockerfile
+          - name: crm-service
+            dockerfile: apps/crm-service/Dockerfile
+          - name: api-gateway
+            dockerfile: apps/api-gateway/Dockerfile
+          - name: web
+            dockerfile: apps/web/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build and push
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+        run: |
+          IMAGE="$REGISTRY/${{ matrix.service.name }}:${GITHUB_SHA}"
+          BUILD_ARGS=()
+          if [ "${{ matrix.service.name }}" = "web" ]; then
+            BUILD_ARGS+=(--build-arg VITE_GRAPHQL_URL=/graphql)
+          fi
