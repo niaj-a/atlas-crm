@@ -48,3 +48,28 @@ jobs:
           if [ "${{ matrix.service.name }}" = "web" ]; then
             BUILD_ARGS+=(--build-arg VITE_GRAPHQL_URL=/graphql)
           fi
+          docker build "${BUILD_ARGS[@]}" -f "${{ matrix.service.dockerfile }}" -t "$IMAGE" .
+          docker push "$IMAGE"
+      - name: Register immutable task definition and deploy
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+        run: |
+          IMAGE="$REGISTRY/${{ matrix.service.name }}:${GITHUB_SHA}"
+          aws ecs describe-task-definition \
+            --task-definition "${{ matrix.service.name }}" \
+            --query taskDefinition > current-task-definition.json
+          jq --arg IMAGE "$IMAGE" \
+            '.containerDefinitions[0].image = $IMAGE
+            | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
+            current-task-definition.json > next-task-definition.json
+          TASK_DEFINITION_ARN="$(aws ecs register-task-definition \
+            --cli-input-json file://next-task-definition.json \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)"
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER" \
+            --service "${{ matrix.service.name }}" \
+            --task-definition "$TASK_DEFINITION_ARN"
+          aws ecs wait services-stable \
+            --cluster "$ECS_CLUSTER" \
+            --services "${{ matrix.service.name }}"
