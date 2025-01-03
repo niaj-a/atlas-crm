@@ -1,0 +1,33 @@
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: apps/auth-service/Dockerfile
+    environment:
+      PORT: 4001
+      MONGO_URI: mongodb://mongo:27017/crm-auth
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-me}
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  crm-service:
+    build:
+      context: .
+      dockerfile: apps/crm-service/Dockerfile
+    environment:
+      PORT: 4002
+      MONGO_URI: mongodb://mongo:27017/crm-data
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-me}
+    depends_on:
