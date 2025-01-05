@@ -31,3 +31,36 @@ services:
       MONGO_URI: mongodb://mongo:27017/crm-data
       JWT_SECRET: ${JWT_SECRET:-dev-only-change-me}
     depends_on:
+      mongo:
+        condition: service_healthy
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: apps/api-gateway/Dockerfile
+    environment:
+      PORT: 4000
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-me}
+      AUTH_SERVICE_URL: http://auth-service:4001
+      CRM_SERVICE_URL: http://crm-service:4002
+      CORS_ORIGINS: http://localhost:5173,http://localhost:8080
+      UPSTREAM_TIMEOUT_MS: 5000
+    depends_on:
+      - auth-service
+      - crm-service
+    ports:
+      - '4000:4000'
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_GRAPHQL_URL: http://localhost:4000/graphql
+    depends_on:
+      - api-gateway
+    ports:
+      - '8080:80'
+
+volumes:
+  mongo_data:
