@@ -156,3 +156,43 @@ resource "aws_lb_listener" "https" {
   ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
   certificate_arn   = var.certificate_arn
 
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.public["web"].arn
+  }
+}
+
+resource "aws_lb_listener_rule" "api_https" {
+  count        = var.certificate_arn == null ? 0 : 1
+  listener_arn = aws_lb_listener.https[0].arn
+  priority     = 10
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.public["api-gateway"].arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/graphql*", "/health"]
+    }
+  }
+}
+
+resource "aws_iam_role" "execution" {
+  name = "${var.project}-ecs-execution"
+  assume_role_policy = jsonencode({ Version = "2012-10-17", Statement = [{ Effect = "Allow", Principal = { Service = "ecs-tasks.amazonaws.com" }, Action = "sts:AssumeRole" }] })
+}
+resource "aws_iam_role_policy_attachment" "execution" {
+  role = aws_iam_role.execution.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+resource "aws_iam_role_policy" "secrets" {
+  role = aws_iam_role.execution.id
+  policy = jsonencode({ Version = "2012-10-17", Statement = [{ Effect = "Allow", Action = ["secretsmanager:GetSecretValue"], Resource = aws_secretsmanager_secret.app.arn }] })
+}
+
+resource "aws_ecs_task_definition" "service" {
+  for_each = local.services
+  family = each.key
+  requires_compatibilities = ["FARGATE"]
+  network_mode = "awsvpc"
