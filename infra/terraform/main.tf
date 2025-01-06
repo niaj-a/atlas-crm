@@ -77,3 +77,43 @@ resource "aws_security_group" "ecs" {
     from_port = 4001
     to_port   = 4002
     protocol  = "tcp"
+    self      = true
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_lb" "main" {
+  name = "production-crm"
+  internal = false
+  load_balancer_type = "application"
+  security_groups = [aws_security_group.alb.id]
+  subnets = var.public_subnet_ids
+}
+
+resource "aws_lb_target_group" "public" {
+  for_each = { for k, v in local.services : k => v if v.public }
+  name = substr("crm-${each.key}", 0, 32)
+  port = each.value.port
+  protocol = "HTTP"
+  vpc_id = var.vpc_id
+  target_type = "ip"
+  health_check { path = each.key == "web" ? "/" : "/health" }
+}
+
+resource "aws_lb_listener" "http" {
+  load_balancer_arn = aws_lb.main.arn
+  port = 80
+  protocol = "HTTP"
+
+  dynamic "default_action" {
+    for_each = var.certificate_arn == null ? [1] : []
+    content {
+      type             = "forward"
+      target_group_arn = aws_lb_target_group.public["web"].arn
+    }
