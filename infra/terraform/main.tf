@@ -235,3 +235,43 @@ resource "aws_ecs_task_definition" "service" {
       { name = "JWT_SECRET", valueFrom = "${aws_secretsmanager_secret.app.arn}:JWT_SECRET::" }
     ]
     logConfiguration = { logDriver = "awslogs", options = {
+      "awslogs-group" = aws_cloudwatch_log_group.service[each.key].name,
+      "awslogs-region" = var.aws_region,
+      "awslogs-stream-prefix" = "ecs"
+    }}
+  }])
+}
+
+resource "aws_service_discovery_private_dns_namespace" "main" {
+  name = "local"
+  vpc = var.vpc_id
+}
+
+resource "aws_service_discovery_service" "internal" {
+  for_each = { for k, v in local.services : k => v if !v.public }
+  name = each.key
+  dns_config {
+    namespace_id = aws_service_discovery_private_dns_namespace.main.id
+    dns_records {
+      ttl  = 10
+      type = "A"
+    }
+    routing_policy = "MULTIVALUE"
+  }
+}
+
+resource "aws_ecs_service" "service" {
+  for_each = local.services
+  name = each.key
+  cluster = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.service[each.key].arn
+  desired_count = var.desired_count
+  launch_type = "FARGATE"
+  health_check_grace_period_seconds = each.value.public ? 30 : 0
+  deployment_minimum_healthy_percent = 100
+  deployment_maximum_percent = 200
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
+  network_configuration {
