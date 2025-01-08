@@ -196,3 +196,42 @@ resource "aws_ecs_task_definition" "service" {
   family = each.key
   requires_compatibilities = ["FARGATE"]
   network_mode = "awsvpc"
+  cpu = 256
+  memory = 512
+  execution_role_arn = aws_iam_role.execution.arn
+  container_definitions = jsonencode([{
+    name = each.key
+    image = "${aws_ecr_repository.service[each.key].repository_url}:latest"
+    essential = true
+    portMappings = [{ containerPort = each.value.port, protocol = "tcp" }]
+    healthCheck = {
+      command = (
+        each.key == "web"
+        ? ["CMD-SHELL", "wget --quiet --tries=1 --spider http://127.0.0.1/ || exit 1"]
+        : ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:${each.value.port}/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      )
+      interval    = 30
+      timeout     = 5
+      retries     = 3
+      startPeriod = 15
+    }
+    environment = concat(
+      [
+        { name = "PORT", value = tostring(each.value.port) },
+        { name = "NODE_ENV", value = "production" },
+        { name = "TRUST_PROXY", value = "1" }
+      ],
+      each.key == "api-gateway" ? [
+        { name = "AUTH_SERVICE_URL", value = "http://auth-service.local:4001" },
+        { name = "CRM_SERVICE_URL", value = "http://crm-service.local:4002" },
+        { name = "CORS_ORIGINS", value = var.cors_origins },
+        { name = "UPSTREAM_TIMEOUT_MS", value = "5000" }
+      ] : []
+    )
+    secrets = each.key == "web" ? [] : each.key == "api-gateway" ? [
+      { name = "JWT_SECRET", valueFrom = "${aws_secretsmanager_secret.app.arn}:JWT_SECRET::" }
+      ] : [
+      { name = "MONGO_URI", valueFrom = "${aws_secretsmanager_secret.app.arn}:MONGO_URI::" },
+      { name = "JWT_SECRET", valueFrom = "${aws_secretsmanager_secret.app.arn}:JWT_SECRET::" }
+    ]
+    logConfiguration = { logDriver = "awslogs", options = {
