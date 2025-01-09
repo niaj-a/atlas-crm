@@ -275,3 +275,42 @@ resource "aws_ecs_service" "service" {
     rollback = true
   }
   network_configuration {
+    subnets = var.private_subnet_ids
+    security_groups = [aws_security_group.ecs.id]
+    assign_public_ip = false
+  }
+  dynamic "load_balancer" {
+    for_each = each.value.public ? [1] : []
+    content {
+      target_group_arn = aws_lb_target_group.public[each.key].arn
+      container_name = each.key
+      container_port = each.value.port
+    }
+  }
+  dynamic "service_registries" {
+    for_each = each.value.public ? [] : [1]
+    content { registry_arn = aws_service_discovery_service.internal[each.key].arn }
+  }
+  lifecycle {
+    ignore_changes = [desired_count]
+  }
+}
+
+resource "aws_appautoscaling_target" "service" {
+  for_each           = local.services
+  max_capacity       = 6
+  min_capacity       = var.desired_count
+  resource_id        = "service/${aws_ecs_cluster.main.name}/${aws_ecs_service.service[each.key].name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_policy" "cpu" {
+  for_each           = local.services
+  name               = "${each.key}-cpu"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.service[each.key].resource_id
+  scalable_dimension = aws_appautoscaling_target.service[each.key].scalable_dimension
+  service_namespace  = aws_appautoscaling_target.service[each.key].service_namespace
+
+  target_tracking_scaling_policy_configuration {
