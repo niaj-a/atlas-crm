@@ -73,3 +73,40 @@ The browser never hits MongoDB or the internal services directly. In Docker/AWS,
 | CI/CD           | GitHub Actions + AWS OIDC            | Checks and deploy                       |
 
 ## Repository structure
+
+```text
+production-crm/
+├── apps/
+│   ├── web/                 React, Redux, Apollo
+│   ├── api-gateway/         Public GraphQL API
+│   ├── auth-service/        Register, login, JWT
+│   └── crm-service/         Customers and activities
+├── packages/
+│   └── shared/              Shared domain constants
+├── docs/
+│   ├── API.md               Internal API notes
+│   ├── AWS_DEPLOYMENT.md    AWS setup / deploy
+│   └── PROJECT_RESEARCH.md  Longer project notes
+├── infra/
+│   └── terraform/           ECS, ALB, ECR, etc.
+├── .github/
+│   ├── workflows/ci.yml
+│   ├── workflows/deploy-aws.yml
+│   └── dependabot.yml
+├── docker-compose.yml
+├── package.json
+└── README.md
+```
+
+## Architecture
+
+### Logical architecture
+
+```mermaid
+flowchart LR
+    User[SalesUser]
+    Web["ReactWeb - Redux and Apollo"]
+    Gateway["GraphQLGateway - Express and ApolloServer"]
+    Auth["AuthService - Express"]
+    CRM["CRMService - Express"]
+    AuthDB[("MongoDB crm-auth")]
