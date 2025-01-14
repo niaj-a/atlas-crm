@@ -35,3 +35,41 @@ What works today:
 14. [AWS deployment](#aws-deployment)
 15. [Known limitations](#known-limitations)
 
+## System overview
+
+Request path:
+
+1. Browser loads the React SPA.
+2. Apollo Client talks GraphQL to the API gateway.
+3. Gateway checks auth, then calls internal REST services.
+4. Auth service owns users, password hashes, and JWT issuance.
+5. CRM service owns customers and embedded activities.
+6. MongoDB holds auth and CRM data in separate databases.
+
+The browser never hits MongoDB or the internal services directly. In Docker/AWS, only the web app and gateway should be public.
+
+## Technology stack
+
+| Area            | Technology                           | Purpose                                 |
+| --------------- | ------------------------------------ | --------------------------------------- |
+| Monorepo        | npm workspaces                       | Apps + shared packages                  |
+| Frontend        | React 18 + TypeScript                | UI                                      |
+| Build tool      | Vite 5                               | Dev server and frontend build           |
+| Client state    | Redux Toolkit                        | Auth session                            |
+| Server state    | Apollo Client                        | GraphQL + cache                         |
+| Public API      | GraphQL + Apollo Server              | Browser-facing API                      |
+| Gateway runtime | Express 4                            | HTTP + middleware                       |
+| Internal APIs   | Express REST                         | Gateway ↔ services                      |
+| Authentication  | JWT HS256 + bcryptjs                 | Identity and password hashing           |
+| Validation      | express-validator                    | Input checks at service boundaries      |
+| Persistence     | MongoDB 7 + Mongoose 8               | Users, customers, activities            |
+| Shared domain   | `@crm/shared`                        | Statuses, roles, activity types, limits |
+| Tests           | Vitest, Supertest, Testing Library   | Unit, HTTP, component tests             |
+| Code quality    | ESLint + Prettier                    | Lint and format                         |
+| Containers      | Docker + Docker Compose              | Local and production images             |
+| Cloud           | AWS ECS Fargate, ALB, ECR, Cloud Map | Runtime and routing                     |
+| Operations      | CloudWatch + Secrets Manager         | Logs, alarms, secrets                   |
+| Infrastructure  | Terraform                            | AWS provisioning                        |
+| CI/CD           | GitHub Actions + AWS OIDC            | Checks and deploy                       |
+
+## Repository structure
