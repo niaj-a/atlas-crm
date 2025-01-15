@@ -110,3 +110,40 @@ flowchart LR
     Auth["AuthService - Express"]
     CRM["CRMService - Express"]
     AuthDB[("MongoDB crm-auth")]
+    CRMDB[("MongoDB crm-data")]
+
+    User -->|"register, login, manage customers"| Web
+    Web -->|"GraphQL over HTTP"| Gateway
+    Gateway -->|"REST: register and login"| Auth
+    Gateway -->|"REST: customers and activities"| CRM
+    Auth -->|"Mongoose"| AuthDB
+    CRM -->|"Mongoose"| CRMDB
+```
+
+### Why GraphQL and REST
+
+The browser gets one GraphQL API. The gateway is a BFF: it hides service URLs and the internal REST shape. Auth and CRM stay as small REST services so they can be built, tested, and deployed on their own.
+
+### Who owns what
+
+- Redux: `user` + `token`
+- `localStorage` key `crm.session`: session persistence (shape-checked on boot; the client does not re-verify the JWT)
+- Apollo: customer queries and cache updates after mutations
+- Auth service: user records
+- CRM service: customers and activities
+- Gateway: no database
+
+## Business logic
+
+### End-to-end flow
+
+```mermaid
+flowchart TD
+    Start[OpenApplication]
+    Session{StructurallyValidSavedSession}
+    AuthScreen[ShowLoginOrRegistration]
+    Credentials[SubmitCredentials]
+    AuthMutation[GraphQLLoginOrRegister]
+    AuthService[ValidateAndAuthenticate]
+    Token[IssueEightHourJWT]
+    Dashboard[ShowCustomerDashboard]
