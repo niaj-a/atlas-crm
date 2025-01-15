@@ -147,3 +147,41 @@ flowchart TD
     AuthService[ValidateAndAuthenticate]
     Token[IssueEightHourJWT]
     Dashboard[ShowCustomerDashboard]
+    Action{SelectedAction}
+    List[ListOwnedCustomers]
+    Create[ValidateAndCreateCustomer]
+    Delete[ConfirmAndDeleteCustomer]
+    Update[UpdateCustomerViaAPI]
+    Activity[AddCustomerActivityViaAPI]
+    OwnerScope["Apply ownerId from JWT subject"]
+    Refresh[UpdateApolloCacheOrResult]
+    Logout[ClearLocalSession]
+
+    Start --> Session
+    Session -->|No| AuthScreen
+    Session -->|Yes| Dashboard
+    AuthScreen --> Credentials --> AuthMutation --> AuthService
+    AuthService -->|Invalid| AuthScreen
+    AuthService -->|Valid| Token --> Dashboard
+    Dashboard --> Action
+    Action -->|List| List --> OwnerScope
+    Action -->|Create| Create --> OwnerScope
+    Action -->|Delete| Delete --> OwnerScope
+    Action -->|Update| Update --> OwnerScope
+    Action -->|Activity| Activity --> OwnerScope
+    OwnerScope --> Refresh --> Dashboard
+    Action -->|SignOut| Logout --> AuthScreen
+```
+
+### Registration
+
+1. User submits name, email, password.
+2. Client sends the `register` mutation.
+3. Gateway forwards to `POST /register`.
+4. Auth service validates fields and normalizes email.
+5. Rejects duplicate emails.
+6. Hashes password with bcrypt (cost 12).
+7. Stores user with default `sales` role.
+8. Signs an HS256 JWT (8h expiry).
+9. Client validates the response and stores the session.
+
