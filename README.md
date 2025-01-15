@@ -185,3 +185,40 @@ flowchart TD
 8. Signs an HS256 JWT (8h expiry).
 9. Client validates the response and stores the session.
 
+### Login
+
+1. User submits email + password.
+2. Auth service looks up the normalized email.
+3. bcrypt compares against the stored hash.
+4. Bad credentials get the same generic error (less account enumeration).
+5. Good credentials get a new JWT and public user object.
+
+### Customer management
+
+CRM routes need a bearer token. The CRM service verifies the JWT again even though the gateway already did. Every DB query scopes with `ownerId: req.user.sub`, so users only see their own customers.
+
+On write, only these fields are accepted:
+
+- `name`
+- `email`
+- `company`
+- `phone`
+- `status`
+
+IDs, ownership fields, and activity arrays from the client are ignored (mass-assignment / ownership transfer protection).
+
+### Activities
+
+Activities live embedded on the customer document: type, text, creator ID, timestamps. Cap is 200 per customer. GraphQL can add activities; the UI does not expose that yet.
+
+## Application components
+
+### Web application
+
+Location: `apps/web`
+
+- `src/main.tsx` — Redux + Apollo providers, attaches JWT to requests
+- `src/App.tsx` — auth screen vs dashboard
+- `src/AuthScreen.tsx` — login / register
+- `src/Dashboard.tsx` — list, create, delete customers
+- `src/authSlice.ts` — session validate + persist
