@@ -222,3 +222,40 @@ Location: `apps/web`
 - `src/AuthScreen.tsx` — login / register
 - `src/Dashboard.tsx` — list, create, delete customers
 - `src/authSlice.ts` — session validate + persist
+- `src/apolloCache.ts` — Apollo cache config
+- `src/ErrorBoundary.tsx` — catches render failures
+- `src/types.ts` — frontend / GraphQL types
+
+UI basics: labels, live regions for status/errors, focus styles, loading state, empty state, delete confirm.
+
+### API gateway
+
+Location: `apps/api-gateway`
+
+- `/graphql` and `GET /health` (browser uses GraphQL over HTTP POST)
+- Helmet, CORS, JSON body limits
+- Verifies HS256 tokens and builds GraphQL context
+- Turns bad/missing auth into GraphQL errors
+- Calls upstreams with a 5s default timeout
+- Maps REST errors to GraphQL codes
+- Graceful shutdown on `SIGTERM` / `SIGINT`
+
+### Authentication service
+
+Location: `apps/auth-service`
+
+- `POST /register`, `POST /login`, `GET /health`
+- Validates input; never returns password hashes
+- Generic invalid-credential responses
+- In-memory rate limiting on auth attempts
+- Rejects weak/default JWT secrets when `NODE_ENV=production`
+- Graceful HTTP + Mongo shutdown
+
+### CRM service
+
+Location: `apps/crm-service`
+
+- Protected customer / activity REST endpoints
+- Verifies JWTs itself
+- Ownership filters on every query
+- Validates bodies and pagination
