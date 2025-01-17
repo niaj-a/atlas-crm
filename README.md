@@ -297,3 +297,40 @@ erDiagram
         string company
         string phone
         string status
+        date createdAt
+        date updatedAt
+    }
+
+    ACTIVITY {
+        ObjectId _id PK
+        string type
+        string text
+        string createdBy
+        date createdAt
+        date updatedAt
+    }
+
+    USER ||--o{ CUSTOMER : owns
+    CUSTOMER ||--o{ ACTIVITY : embeds
+    USER ||--o{ ACTIVITY : creates
+```
+
+Auth and CRM use separate MongoDB databases. `ownerId` / `createdBy` are strings from the JWT subject — not cross-DB Mongoose refs.
+
+## API surface
+
+### Public GraphQL operations
+
+| Type     | Operation                        | Authentication | Purpose                   |
+| -------- | -------------------------------- | -------------- | ------------------------- |
+| Query    | `me`                             | Optional       | Gateway auth context      |
+| Query    | `customers(limit, offset)`       | Required       | List the user's customers |
+| Mutation | `register(input)`                | No             | Create user + session     |
+| Mutation | `login(input)`                   | No             | Authenticate              |
+| Mutation | `createCustomer(input)`          | Required       | Create owned customer     |
+| Mutation | `updateCustomer(id, input)`      | Required       | Update owned customer     |
+| Mutation | `deleteCustomer(id)`             | Required       | Delete owned customer     |
+| Mutation | `addActivity(customerId, input)` | Required       | Add activity              |
+
+### Internal REST endpoints
+
