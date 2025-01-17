@@ -259,3 +259,41 @@ Location: `apps/crm-service`
 - Verifies JWTs itself
 - Ownership filters on every query
 - Validates bodies and pagination
+- Writable-field allowlist
+- List `limit` capped at 100; `offset` at 10,000
+- Max 200 activities per customer
+- Normalizes `_id` and timestamps for clients
+
+### Shared package
+
+Location: `packages/shared`
+
+`@crm/shared` keeps constants in sync:
+
+- Customer statuses
+- User roles
+- Activity types
+- Max activity count
+
+## Data model
+
+```mermaid
+erDiagram
+    USER {
+        ObjectId _id PK
+        string name
+        string email UK
+        string passwordHash
+        string role
+        date createdAt
+        date updatedAt
+    }
+
+    CUSTOMER {
+        ObjectId _id PK
+        string ownerId
+        string name
+        string email
+        string company
+        string phone
+        string status
