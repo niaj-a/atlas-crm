@@ -334,3 +334,40 @@ Auth and CRM use separate MongoDB databases. `ownerId` / `createdBy` are strings
 
 ### Internal REST endpoints
 
+| Service      | Method and path                  | Purpose              |
+| ------------ | -------------------------------- | -------------------- |
+| auth-service | `GET /health`                    | Health               |
+| auth-service | `POST /register`                 | Register             |
+| auth-service | `POST /login`                    | Login                |
+| crm-service  | `GET /health`                    | Health               |
+| crm-service  | `GET /customers`                 | List owned customers |
+| crm-service  | `POST /customers`                | Create customer      |
+| crm-service  | `PUT /customers/:id`             | Update customer      |
+| crm-service  | `DELETE /customers/:id`          | Delete customer      |
+| crm-service  | `POST /customers/:id/activities` | Add activity         |
+
+## Security model
+
+What is in place:
+
+- bcrypt (cost 12)
+- HS256 JWTs, algorithm pinned on verify
+- 8-hour token expiry
+- Production check for JWT secret strength
+- Token verify on gateway and CRM service
+- Per-user ownership filters
+- Writable-field allowlists
+- Input validation / normalization
+- Helmet headers
+- Request body limits
+- Configurable CORS
+- Auth rate limiting
+- Generic login errors
+- Internal network isolation (Docker / AWS)
+- Optional HTTPS via ACM
+- Secrets Manager
+- ECR image scanning
+- Immutable SHA-tagged deploys
+
+Gaps / caveats:
+
