@@ -371,3 +371,41 @@ What is in place:
 
 Gaps / caveats:
 
+- JWT in `localStorage` — XSS can steal it
+- Logout is client-only; no server-side revocation
+- Roles exist on users/tokens, but RBAC is not enforced yet
+- Rate limiter is in-memory per process (use Redis / edge at scale)
+- Production still wants WAF, tighter DB networking, backups, and alarm actions
+
+## Local development
+
+### Prerequisites
+
+- Node.js 20+
+- npm
+- MongoDB 7 (if not using Docker)
+- Docker + Compose (for container runs)
+
+### Install
+
+```bash
+npm ci
+```
+
+### Configure
+
+macOS/Linux:
+
+```bash
+cp .env.example .env
+```
+
+Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Set `JWT_SECRET` to a long random value.
+
+### Run all workspaces
