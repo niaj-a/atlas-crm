@@ -409,3 +409,40 @@ Copy-Item .env.example .env
 Set `JWT_SECRET` to a long random value.
 
 ### Run all workspaces
+
+```bash
+npm run dev
+```
+
+Defaults:
+
+| Component       | Address                         |
+| --------------- | ------------------------------- |
+| Web             | `http://localhost:5173`         |
+| GraphQL gateway | `http://localhost:4000/graphql` |
+| Auth service    | `http://localhost:4001`         |
+| CRM service     | `http://localhost:4002`         |
+| MongoDB         | `mongodb://localhost:27017`     |
+
+### Run with Docker Compose
+
+```bash
+docker compose up --build
+```
+
+- Web UI: `http://localhost:8080`
+- GraphQL: `http://localhost:4000/graphql`
+
+MongoDB and internal services stay on the Compose network (not published to the host).
+
+## Configuration
+
+| Variable                    | Used by            | Default                   | Description                                                   |
+| --------------------------- | ------------------ | ------------------------- | ------------------------------------------------------------- |
+| `NODE_ENV`                  | Backend services   | Development behavior      | Enables production secret checks                              |
+| `JWT_SECRET`                | Gateway, auth, CRM | Development-only fallback | Shared JWT signing key                                        |
+| `MONGO_URI`                 | Auth, CRM          | Local MongoDB URLs        | Database connection string                                    |
+| `PORT`                      | Each backend       | Service-specific          | HTTP listening port                                           |
+| `AUTH_SERVICE_URL`          | Gateway            | `http://localhost:4001`   | Internal auth URL                                             |
+| `CRM_SERVICE_URL`           | Gateway            | `http://localhost:4002`   | Internal CRM URL                                              |
+| `CORS_ORIGINS`              | Gateway            | Local web origins         | Comma-separated allowed origins                               |
