@@ -446,3 +446,40 @@ MongoDB and internal services stay on the Compose network (not published to the 
 | `AUTH_SERVICE_URL`          | Gateway            | `http://localhost:4001`   | Internal auth URL                                             |
 | `CRM_SERVICE_URL`           | Gateway            | `http://localhost:4002`   | Internal CRM URL                                              |
 | `CORS_ORIGINS`              | Gateway            | Local web origins         | Comma-separated allowed origins                               |
+| `ALLOWED_ORIGINS`           | Gateway            | Legacy alias              | Fallback alias for CORS origins                               |
+| `UPSTREAM_TIMEOUT_MS`       | Gateway            | `5000`                    | Internal request timeout                                      |
+| `AUTH_RATE_LIMIT_WINDOW_MS` | Auth               | `60000`                   | Rate-limit window                                             |
+| `AUTH_RATE_LIMIT_MAX`       | Auth               | `20`                      | Requests allowed per requester IP/path/window (process-local) |
+| `VITE_GRAPHQL_URL`          | Web build          | Local gateway URL         | Browser GraphQL endpoint                                      |
+
+## Testing and quality
+
+```bash
+npm test
+npm run lint
+npm run format:check
+npm run build
+npm run check
+```
+
+Coverage highlights:
+
+- GraphQL schema + auth behavior
+- Gateway upstream errors / timeouts
+- Auth validation, login, rate limiting
+- CRM health, auth protection, validation, mass-assignment cases
+- Session persistence and bad storage
+- Login / register components
+- Customer create/delete and empty state
+
+CI runs install, lint, tests, builds, format check, prod dependency audit, Compose validation, and Terraform init/validate.
+
+## Docker architecture
+
+```mermaid
+flowchart LR
+    HostBrowser[HostBrowser]
+    WebPort["localhost:8080"]
+    GatewayPort["localhost:4000"]
+
+    subgraph ComposeNetwork [DockerComposeNetwork]
