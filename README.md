@@ -483,3 +483,41 @@ flowchart LR
     GatewayPort["localhost:4000"]
 
     subgraph ComposeNetwork [DockerComposeNetwork]
+        WebContainer["web :80"]
+        GatewayContainer["api-gateway :4000"]
+        AuthContainer["auth-service :4001"]
+        CRMContainer["crm-service :4002"]
+        MongoContainer[("mongo :27017")]
+    end
+
+    HostBrowser --> WebPort --> WebContainer
+    HostBrowser --> GatewayPort --> GatewayContainer
+    GatewayContainer --> AuthContainer
+    GatewayContainer --> CRMContainer
+    AuthContainer --> MongoContainer
+    CRMContainer --> MongoContainer
+```
+
+Dockerfiles install from the root lockfile. Backend images run as the Node user and define health checks. Frontend is nginx with basic security headers.
+
+## AWS deployment
+
+```mermaid
+flowchart LR
+    Internet[Internet]
+    ALB["ApplicationLoadBalancer - HTTP or HTTPS"]
+    WebTasks["ECSWebTasks"]
+    GatewayTasks["ECSGatewayTasks"]
+    CloudMap[AWSCloudMap]
+    AuthTasks["ECSAuthTasks"]
+    CRMTasks["ECSCRMTasks"]
+    Atlas[("MongoDBAtlas")]
+    Secrets[AWSSecretsManager]
+    Logs[CloudWatchLogsAndAlarms]
+    ECR[AmazonECR]
+
+    Internet --> ALB
+    ALB -->|default| WebTasks
+    ALB -->|"/graphql and /health"| GatewayTasks
+    GatewayTasks --> CloudMap
+    CloudMap --> AuthTasks
