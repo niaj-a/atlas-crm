@@ -150,6 +150,110 @@ flowchart TD
     Action{SelectedAction}
     List[ListOwnedCustomers]
     Create[ValidateAndCreateCustomer]
+    Delete[ConfirmAndDeleteCustomer]
+    Update[UpdateCustomerViaAPI]
+    Activity[AddCustomerActivityViaAPI]
+    OwnerScope["Apply ownerId from JWT subject"]
+    Refresh[UpdateApolloCacheOrResult]
+    Logout[ClearLocalSession]
+
+    Start --> Session
+    Session -->|No| AuthScreen
+    Session -->|Yes| Dashboard
+    AuthScreen --> Credentials --> AuthMutation --> AuthService
+    AuthService -->|Invalid| AuthScreen
+    AuthService -->|Valid| Token --> Dashboard
+    Dashboard --> Action
+    Action -->|List| List --> OwnerScope
+    Action -->|Create| Create --> OwnerScope
+    Action -->|Delete| Delete --> OwnerScope
+    Action -->|Update| Update --> OwnerScope
+    Action -->|Activity| Activity --> OwnerScope
+    OwnerScope --> Refresh --> Dashboard
+    Action -->|SignOut| Logout --> AuthScreen
+```
+
+### Registration
+
+1. User submits name, email, password.
+2. Client sends the `register` mutation.
+3. Gateway forwards to `POST /register`.
+4. Auth service validates fields and normalizes email.
+5. Rejects duplicate emails.
+6. Hashes password with bcrypt (cost 12).
+7. Stores user with default `sales` role.
+8. Signs an HS256 JWT (8h expiry).
+9. Client validates the response and stores the session.
+
+### Login
+
+1. User submits email + password.
+2. Auth service looks up the normalized email.
+3. bcrypt compares against the stored hash.
+4. Bad credentials get the same generic error (less account enumeration).
+5. Good credentials get a new JWT and public user object.
+
+### Customer management
+
+CRM routes need a bearer token. The CRM service verifies the JWT again even though the gateway already did. Every DB query scopes with `ownerId: req.user.sub`, so users only see their own customers.
+
+On write, only these fields are accepted:
+
+- `name`
+- `email`
+- `company`
+- `phone`
+- `status`
+
+IDs, ownership fields, and activity arrays from the client are ignored (mass-assignment / ownership transfer protection).
+
+### Activities
+
+Activities live embedded on the customer document: type, text, creator ID, timestamps. Cap is 200 per customer. GraphQL can add activities; the UI does not expose that yet.
+
+## Application components
+
+### Web application
+
+Location: `apps/web`
+
+- `src/main.tsx` — Redux + Apollo providers, attaches JWT to requests
+- `src/App.tsx` — auth screen vs dashboard
+- `src/AuthScreen.tsx` — login / register
+- `src/Dashboard.tsx` — list, create, delete customers
+- `src/authSlice.ts` — session validate + persist
+- `src/apolloCache.ts` — Apollo cache config
+- `src/ErrorBoundary.tsx` — catches render failures
+- `src/types.ts` — frontend / GraphQL types
+
+UI basics: labels, live regions for status/errors, focus styles, loading state, empty state, delete confirm.
+
+### API gateway
+
+Location: `apps/api-gateway`
+
+- `/graphql` and `GET /health` (browser uses GraphQL over HTTP POST)
+- Helmet, CORS, JSON body limits
+- Verifies HS256 tokens and builds GraphQL context
+- Turns bad/missing auth into GraphQL errors
+- Calls upstreams with a 5s default timeout
+- Maps REST errors to GraphQL codes
+- Graceful shutdown on `SIGTERM` / `SIGINT`
+
+### Authentication service
+
+Location: `apps/auth-service`
+
+- `POST /register`, `POST /login`, `GET /health`
+- Validates input; never returns password hashes
+- Generic invalid-credential responses
+- In-memory rate limiting on auth attempts
+- Rejects weak/default JWT secrets when `NODE_ENV=production`
+- Graceful HTTP + Mongo shutdown
+
+### CRM service
+
+Location: `apps/crm-service`
 
 - Protected customer / activity REST endpoints
 - Verifies JWTs itself
@@ -417,3 +521,40 @@ flowchart LR
     ALB -->|"/graphql and /health"| GatewayTasks
     GatewayTasks --> CloudMap
     CloudMap --> AuthTasks
+    CloudMap --> CRMTasks
+    AuthTasks --> Atlas
+    CRMTasks --> Atlas
+    Secrets --> GatewayTasks
+    Secrets --> AuthTasks
+    Secrets --> CRMTasks
+    ECR --> WebTasks
+    ECR --> GatewayTasks
+    ECR --> AuthTasks
+    ECR --> CRMTasks
+    WebTasks --> Logs
+    GatewayTasks --> Logs
+    AuthTasks --> Logs
+    CRMTasks --> Logs
+```
+
+Terraform sets up ECR, ECS tasks/services, ALB, Cloud Map, security groups, Secrets Manager, CloudWatch logs, autoscaling, and alarms. You pass in existing VPC/subnet IDs. Private subnets need NAT or the right VPC endpoints.
+
+GitHub Actions uses OIDC, builds images tagged with the commit SHA, registers a new task definition, updates the ECS service, and waits until stable. Details: [docs/AWS_DEPLOYMENT.md](docs/AWS_DEPLOYMENT.md).
+
+## Known limitations
+
+- UI does not expose customer update or activity management yet
+- `me` exists in GraphQL but the UI does not use it
+- JWT only — no refresh tokens or revocation store
+- Session in `localStorage`, not httpOnly cookies
+- Roles are stored; RBAC is not implemented
+- Ownership is per user, not org/team
+- Pagination is offset/limit with no total count
+- Embedded activities are fine at small scale, awkward for heavy analytics
+- Backends are JavaScript; frontend is TypeScript
+- Auth rate limiter is not distributed
+- Terraform assumes an existing VPC, subnets, MongoDB provider, and GitHub OIDC role
+
+## License
+
+No license file yet. Add one before you distribute the project.
